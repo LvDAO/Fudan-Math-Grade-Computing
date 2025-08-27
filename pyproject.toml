@@ -13,6 +13,7 @@ dependencies = [
 current_version = "1.0.0" 
 commit = true 
 tag = true
+push = true
 [tool.bumpversion.file_patterns]
 "pyproject.toml" = [
     'version = "{current_version}"',
