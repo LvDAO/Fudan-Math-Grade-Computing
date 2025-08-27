@@ -1,6 +1,6 @@
 [project]
 name = "grades-calculation"
-version = "0.1.0"
+version = "1.0.0"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -10,7 +10,7 @@ dependencies = [
     "polars>=1.32.3",
 ]
 [tool.bumpversion]
-current_version = "0.1.0" 
+current_version = "1.0.0" 
 commit = true 
 tag = true
 [tool.bumpversion.file_patterns]
