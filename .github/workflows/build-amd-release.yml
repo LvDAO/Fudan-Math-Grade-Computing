@@ -1,5 +1,5 @@
 # 工作流的名称
-name: Build and Release Executables (uv project)
+name: Build and Release Executables (Nuitka-Action)
 
 # 触发工作流的事件
 on:
@@ -10,69 +10,66 @@ on:
 # 工作流中包含的任务（Jobs）
 jobs:
   build-and-release:
-    name: Build on ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
     runs-on: ${{ matrix.os }}
 
     # 任务中的步骤（Steps） 
     steps:
       # 第一步：检出（下载）你的代码到虚拟机
-      - name: Checkout repository
+      - name: Check-out repository
         uses: actions/checkout@v4
 
-      # 第二步：设置 Python 环境 (Nuitka 和 uv 仍需要一个基础 Python)
-      - name: Set up Python
+      # 第二步：设置 Python 环境
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13' # 你可以根据你的项目修改 Python 版本
+          python-version: '3.13'
+          architecture: 'x64'
+          cache: 'pip'
 
       # 第三步：安装和配置 uv
-      # 使用官方 Action，它会自动处理安装和 PATH 配置
       - name: Set up uv
         uses: astral-sh/setup-uv@v1
         with:
           version: latest
 
-      # 第四步：创建虚拟环境并安装依赖
-      - name: Create virtual environment and install dependencies
+      # 第四步：安装项目依赖
+      - name: Install Dependencies
         run: |
-          # 创建虚拟环境
           uv venv
-          
-          # 安装项目依赖（包括 nuitka）
           uv pip install -e .
-          
-          # 备用方式：单独安装 nuitka（如果上面的方式不工作）
-          # uv pip install nuitka
 
-      # 第五步：使用 Nuitka 编译项目 (Windows)
-      - name: Build with Nuitka (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          $APP_NAME = "Fudan-Math-Grade-Computing"
-          Write-Host "Building for Windows..."
-          uv run python -m nuitka --onefile --standalone --windows-disable-console --output-dir=dist --output-filename="$APP_NAME-windows" main.py
-          echo "ASSET_PATH=dist/$APP_NAME-windows.exe" >> $env:GITHUB_ENV
-          echo "ASSET_NAME=$APP_NAME-windows.exe" >> $env:GITHUB_ENV
-        shell: pwsh
+      # 第五步：使用 Nuitka-Action 编译项目
+      - name: Build Executable
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: main.py
+          mode: app
+          no-deployment-flag: self-execution
 
-      # 第五步：使用 Nuitka 编译项目 (macOS)
-      - name: Build with Nuitka (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          APP_NAME="Fudan-Math-Grade-Computing"
-          echo "Building for macOS..."
-          uv run python -m nuitka --onefile --standalone --macos-disable-console --output-dir=dist --output-filename=${APP_NAME}-macOS main.py
-          echo "ASSET_PATH=dist/${APP_NAME}-macOS.app" >> $GITHUB_ENV
-          echo "ASSET_NAME=${APP_NAME}-macOS.app" >> $GITHUB_ENV
-        shell: bash
+      # 第六步：上传构建产物
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }} Build
+          path: |
+            build/*.exe
+            build/*.bin
+            build/*.app/**/*
+            build/*.dist/**/*
+          include-hidden-files: true
 
-      - name: Create Release and Upload Asset
+      # 第七步：创建发布（仅限标签推送）
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ env.ASSET_PATH }}
+            build/*.exe
+            build/*.bin
+            build/*.app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
