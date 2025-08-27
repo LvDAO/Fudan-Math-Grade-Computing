@@ -7,6 +7,11 @@ on:
     tags:
       - 'v*.*.*'
 
+# 设置权限以允许创建 release
+permissions:
+  contents: write
+  packages: write
+
 # 工作流中包含的任务（Jobs）
 jobs:
   build-and-release:
@@ -72,4 +77,4 @@ jobs:
             build/*.bin
             build/*.app
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
