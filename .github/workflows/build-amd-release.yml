@@ -1,0 +1,76 @@
+# 工作流的名称
+name: Build and Release Executables (uv project)
+
+# 触发工作流的事件
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# 工作流中包含的任务（Jobs）
+jobs:
+  build-and-release:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    # 任务中的步骤（Steps） 
+    steps:
+      # 第一步：检出（下载）你的代码到虚拟机
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 第二步：设置 Python 环境 (Nuitka 和 uv 仍需要一个基础 Python)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14' # 你可以根据你的项目修改 Python 版本
+
+      # 第三步：安装和配置 uv
+      # 使用官方 Action，它会自动处理安装和 PATH 配置
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          # 如果需要，可以指定 uv 的版本，'latest' 为最新版
+          uv-version: latest
+
+      # 第四步：使用 uv 安装依赖
+      - name: Install dependencies with uv
+        run: |
+          # 首先安装 Nuitka 这个构建工具
+          uv pip install nuitka
+          
+          # 然后安装项目自身的所有依赖
+          # 推荐方式：如果你的依赖在 pyproject.toml 中
+          uv pip sync
+          
+          # 备用方式：如果你仍在使用 requirements.txt
+          # uv pip install -r requirements.txt
+
+      # 第五步：使用 Nuitka 编译项目
+      - name: Build with Nuitka
+        run: |
+          APP_NAME="Fudan-Math-Grade-Computing"
+
+          # 根据操作系统设置不同的参数和最终文件名
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "Building for Windows..."
+            python -m nuitka --onefile --standalone --windows-disable-console --output-dir=dist --output-filename=${APP_NAME}-windows main.py
+            echo "ASSET_PATH=dist/${APP_NAME}-windows.exe" >> $GITHUB_ENV
+            echo "ASSET_NAME=${APP_NAME}-windows.exe" >> $GITHUB_ENV
+          else
+            echo "Building for macOS..."
+            python -m nuitka --onefile --standalone --macos-disable-console --output-dir=dist --output-filename=${APP_NAME}-macOS main.py
+            echo "ASSET_PATH=dist/${APP_NAME}-macOS.app" >> $GITHUB_ENV
+            echo "ASSET_NAME=${APP_NAME}-macOS.app" >> $GITHUB_ENV
+          fi
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ASSET_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
