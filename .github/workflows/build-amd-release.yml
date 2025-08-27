@@ -26,7 +26,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14' # 你可以根据你的项目修改 Python 版本
+          python-version: '3.13' # 你可以根据你的项目修改 Python 版本
 
       # 第三步：安装和配置 uv
       # 使用官方 Action，它会自动处理安装和 PATH 配置
