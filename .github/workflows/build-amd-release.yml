@@ -47,23 +47,27 @@ jobs:
           # 备用方式：单独安装 nuitka（如果上面的方式不工作）
           # uv pip install nuitka
 
-      # 第五步：使用 Nuitka 编译项目
-      - name: Build with Nuitka
+      # 第五步：使用 Nuitka 编译项目 (Windows)
+      - name: Build with Nuitka (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $APP_NAME = "Fudan-Math-Grade-Computing"
+          Write-Host "Building for Windows..."
+          uv run python -m nuitka --onefile --standalone --windows-disable-console --output-dir=dist --output-filename="$APP_NAME-windows" main.py
+          echo "ASSET_PATH=dist/$APP_NAME-windows.exe" >> $env:GITHUB_ENV
+          echo "ASSET_NAME=$APP_NAME-windows.exe" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      # 第五步：使用 Nuitka 编译项目 (macOS)
+      - name: Build with Nuitka (macOS)
+        if: runner.os == 'macOS'
         run: |
           APP_NAME="Fudan-Math-Grade-Computing"
-
-          # 根据操作系统设置不同的参数和最终文件名
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            echo "Building for Windows..."
-            uv run python -m nuitka --onefile --standalone --windows-disable-console --output-dir=dist --output-filename=${APP_NAME}-windows main.py
-            echo "ASSET_PATH=dist/${APP_NAME}-windows.exe" >> $GITHUB_ENV
-            echo "ASSET_NAME=${APP_NAME}-windows.exe" >> $GITHUB_ENV
-          else
-            echo "Building for macOS..."
-            uv run python -m nuitka --onefile --standalone --macos-disable-console --output-dir=dist --output-filename=${APP_NAME}-macOS main.py
-            echo "ASSET_PATH=dist/${APP_NAME}-macOS.app" >> $GITHUB_ENV
-            echo "ASSET_NAME=${APP_NAME}-macOS.app" >> $GITHUB_ENV
-          fi
+          echo "Building for macOS..."
+          uv run python -m nuitka --onefile --standalone --macos-disable-console --output-dir=dist --output-filename=${APP_NAME}-macOS main.py
+          echo "ASSET_PATH=dist/${APP_NAME}-macOS.app" >> $GITHUB_ENV
+          echo "ASSET_NAME=${APP_NAME}-macOS.app" >> $GITHUB_ENV
+        shell: bash
 
       - name: Create Release and Upload Asset
         uses: softprops/action-gh-release@v2
