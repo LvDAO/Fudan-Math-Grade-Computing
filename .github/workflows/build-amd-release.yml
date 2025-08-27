@@ -19,7 +19,26 @@ jobs:
   build-and-release:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          # Windows 构建
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-arch: x64
+          # macOS 构建
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            python-arch: x64
+          - os: macos-14  # Apple Silicon (ARM64)
+            platform: macos
+            arch: arm64
+            python-arch: arm64
+          # Linux 构建
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            python-arch: x64
 
     runs-on: ${{ matrix.os }}
 
@@ -34,7 +53,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          architecture: 'x64'
+          architecture: ${{ matrix.python-arch }}
           cache: 'pip'
 
       # 第三步：安装和配置 uv
@@ -62,7 +81,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }} Build
+          name: ${{ matrix.platform }}-${{ matrix.arch }}-build
           path: |
             build/*.exe
             build/*.bin
@@ -78,14 +97,63 @@ jobs:
           find . -name "*.exe" -o -name "*.bin" -o -name "*.app" || echo "No executable files found"
         shell: bash
 
-      # 第八步：创建发布（仅限标签推送）
+      # 第八步：准备发布文件
+      - name: Prepare release assets
+        run: |
+          mkdir -p release_assets
+          PLATFORM="${{ matrix.platform }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # 复制 Windows 可执行文件
+          if ls build/*.exe 1> /dev/null 2>&1; then
+            for exe in build/*.exe; do
+              exe_name=$(basename "$exe" .exe)
+              new_name="${exe_name}-${PLATFORM}-${ARCH}.exe"
+              cp "$exe" "release_assets/$new_name"
+              echo "Copied Windows executable: $new_name"
+            done
+          fi
+          
+          # 复制 Linux 二进制文件
+          if ls build/*.bin 1> /dev/null 2>&1; then
+            for bin in build/*.bin; do
+              bin_name=$(basename "$bin" .bin)
+              new_name="${bin_name}-${PLATFORM}-${ARCH}"
+              cp "$bin" "release_assets/$new_name"
+              chmod +x "release_assets/$new_name"
+              echo "Copied Linux binary: $new_name"
+            done
+          fi
+          
+          # 处理 macOS .app 目录 - 打包为 zip
+          if ls -d build/*.app 1> /dev/null 2>&1; then
+            for app in build/*.app; do
+              app_name=$(basename "$app" .app)
+              zip_name="${app_name}-${PLATFORM}-${ARCH}.zip"
+              echo "Creating zip for macOS app: $zip_name"
+              (cd build && zip -r "../release_assets/$zip_name" "$(basename "$app")")
+            done
+          fi
+          
+          # 复制 .dist 目录内容（如果存在）
+          if ls -d build/*.dist 1> /dev/null 2>&1; then
+            for dist in build/*.dist; do
+              dist_name=$(basename "$dist" .dist)
+              zip_name="${dist_name}-${PLATFORM}-${ARCH}-dist.zip"
+              echo "Creating zip for dist: $zip_name"
+              (cd build && zip -r "../release_assets/$zip_name" "$(basename "$dist")")
+            done
+          fi
+          
+          echo "Release assets prepared:"
+          ls -la release_assets/
+        shell: bash
+
+      # 第九步：创建发布（仅限标签推送）
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/*.exe
-            build/*.bin
-            build/*.app
+          files: release_assets/*
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -120,7 +188,7 @@ jobs:
           gh release create ${{ github.ref_name }} \
             --title "Release ${{ github.ref_name }}" \
             --generate-notes \
-            build/*.exe build/*.bin build/*.app || echo "No files to upload"
+            release_assets/* || echo "No files to upload"
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         shell: bash
