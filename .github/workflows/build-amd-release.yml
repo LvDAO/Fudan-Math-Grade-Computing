@@ -33,8 +33,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v1
         with:
-          # 如果需要，可以指定 uv 的版本，'latest' 为最新版
-          uv-version: latest
+          version: latest
 
       # 第四步：使用 uv 安装依赖
       - name: Install dependencies with uv
