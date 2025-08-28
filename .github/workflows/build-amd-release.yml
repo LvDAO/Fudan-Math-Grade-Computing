@@ -62,8 +62,23 @@ jobs:
         with:
           version: latest
 
-      # 第四步：安装项目依赖
-      - name: Install Dependencies
+      # 第四步：安装项目依赖 (Windows)
+      - name: Install Dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # 使用 uv 创建虚拟环境并安装依赖
+          uv venv .venv
+          .venv\Scripts\activate
+          uv pip install -e .
+          # 验证 polars 安装
+          python -c "import polars; print(f'Polars installed at: {polars.__file__}')"
+          echo "VIRTUAL_ENV=$env:PWD\.venv" >> $env:GITHUB_ENV
+          echo "$env:PWD\.venv\Scripts" >> $env:GITHUB_PATH
+        shell: pwsh
+
+      # 第四步：安装项目依赖 (Unix)
+      - name: Install Dependencies (Unix)
+        if: runner.os != 'Windows'
         run: |
           # 使用 uv 创建虚拟环境并安装依赖
           uv venv .venv
@@ -73,6 +88,7 @@ jobs:
           python -c "import polars; print(f'Polars installed at: {polars.__file__}')"
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        shell: bash
 
       # 第五步：使用 Nuitka-Action 编译项目
       - name: Build Executable
