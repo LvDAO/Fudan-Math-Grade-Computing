@@ -7,19 +7,19 @@
 #### 🪟 Windows 用户
 
 - 下载：`main-windows-x64.exe`
-- 使用：双击运行或在命令行中执行
+- 使用：在命令行中执行
 
 #### 🍎 macOS 用户
 
 **Intel Mac (x64)**
 
 - 下载：`main-macos-x64.zip`
-- 使用：解压后双击 `main.app` 运行
+- 使用：解压后使用终端app运行
 
 **Apple Silicon Mac (ARM64)**
 
 - 下载：`main-macos-arm64.zip`
-- 使用：解压后双击 `main.app` 运行
+- 使用：解压后使用终端app运行
 
 > **注意**：首次运行时可能需要在"系统偏好设置 > 安全性与隐私"中允许运行此应用。
 
