@@ -97,22 +97,45 @@ jobs:
           find . -name "*.exe" -o -name "*.bin" -o -name "*.app" || echo "No executable files found"
         shell: bash
 
-      # 第八步：准备发布文件
-      - name: Prepare release assets
+      # 第八步：准备发布文件 (Windows)
+      - name: Prepare release assets (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path release_assets
+          $PLATFORM = "${{ matrix.platform }}"
+          $ARCH = "${{ matrix.arch }}"
+          
+          # 复制 Windows 可执行文件
+          if (Test-Path "build\*.exe") {
+            Get-ChildItem "build\*.exe" | ForEach-Object {
+              $exe_name = $_.BaseName
+              $new_name = "${exe_name}-${PLATFORM}-${ARCH}.exe"
+              Copy-Item $_.FullName "release_assets\$new_name"
+              Write-Host "Copied Windows executable: $new_name"
+            }
+          }
+          
+          # 处理 .dist 目录内容（如果存在）
+          if (Test-Path "build\*.dist") {
+            Get-ChildItem "build\*.dist" -Directory | ForEach-Object {
+              $dist_name = $_.BaseName
+              $zip_name = "${dist_name}-${PLATFORM}-${ARCH}-dist.zip"
+              Write-Host "Creating zip for dist: $zip_name"
+              Compress-Archive -Path $_.FullName -DestinationPath "release_assets\$zip_name" -Force
+            }
+          }
+          
+          Write-Host "Release assets prepared:"
+          Get-ChildItem release_assets
+        shell: powershell
+
+      # 第八步：准备发布文件 (Unix - macOS/Linux)
+      - name: Prepare release assets (Unix)
+        if: matrix.platform != 'windows'
         run: |
           mkdir -p release_assets
           PLATFORM="${{ matrix.platform }}"
           ARCH="${{ matrix.arch }}"
-          
-          # 复制 Windows 可执行文件
-          if ls build/*.exe 1> /dev/null 2>&1; then
-            for exe in build/*.exe; do
-              exe_name=$(basename "$exe" .exe)
-              new_name="${exe_name}-${PLATFORM}-${ARCH}.exe"
-              cp "$exe" "release_assets/$new_name"
-              echo "Copied Windows executable: $new_name"
-            done
-          fi
           
           # 复制 Linux 二进制文件
           if ls build/*.bin 1> /dev/null 2>&1; then
