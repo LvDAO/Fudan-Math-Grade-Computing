@@ -16,7 +16,7 @@ permissions:
 
 # 工作流中包含的任务（Jobs）
 jobs:
-  build-and-release:
+  build:
     strategy:
       matrix:
         include:
@@ -56,40 +56,9 @@ jobs:
           architecture: ${{ matrix.python-arch }}
           cache: 'pip'
 
-      # 第三步：安装和配置 uv
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v1
-        with:
-          version: latest
-
-      # 第四步：安装项目依赖 (Windows)
-      - name: Install Dependencies (Windows)
-        if: runner.os == 'Windows'
+      - name: Install Dependencies
         run: |
-          # 使用 uv 创建虚拟环境并安装依赖
-          uv venv .venv
-          .venv\Scripts\activate
-          uv pip install -e .
-          # 验证 polars 安装
-          python -c "import polars; print(f'Polars installed at: {polars.__file__}')"
-          echo "VIRTUAL_ENV=$env:PWD\.venv" >> $env:GITHUB_ENV
-          echo "$env:PWD\.venv\Scripts" >> $env:GITHUB_PATH
-        shell: pwsh
-
-      # 第四步：安装项目依赖 (Unix)
-      - name: Install Dependencies (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          # 使用 uv 创建虚拟环境并安装依赖
-          uv venv .venv
-          source .venv/bin/activate
-          uv pip install -e .
-          # 验证 polars 安装
-          python -c "import polars; print(f'Polars installed at: {polars.__file__}')"
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-        shell: bash
-
+          pip install .
       # 第五步：使用 Nuitka-Action 编译项目
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@main
@@ -103,106 +72,49 @@ jobs:
           assume-yes-for-downloads: true
           no-deployment-flag: self-execution
 
-      # 第六步：上传构建产物
-      - name: Upload Artifacts
+      - name: Rename Executable
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv build/main.exe build/calculator-${{ matrix.platform }}-${{ matrix.arch }}.exe
+          else
+            mv build/main.bin build/calculator-${{ matrix.platform }}-${{ matrix.arch }}.bin
+          fi
+        shell: bash
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}-${{ matrix.arch }}-build
-          path: |
-            build/*.exe
-            build/main
-          include-hidden-files: true
+          # 构建产物的名称，统一命名以便后续下载
+          name: executables
+          # 要上传的文件路径
+          path: build/calculator-${{ matrix.platform }}-${{ matrix.arch }}*
 
-      # 第七步：检查构建产物
-      - name: List build artifacts
-        run: |
-          echo "Checking build directory contents:"
-          ls -la build/ || echo "Build directory does not exist"
-          find . -name "*.exe" -o -name "main" || echo "No executable files found"
-        shell: bash
+  release:
+    # 'needs' 确保这个 Job 会在 'build_executables' 全部成功后运行
+    needs: build
+    runs-on: ubuntu-latest
 
-      # 第八步：准备发布文件 (Windows)
-      - name: Prepare release assets (Windows)
-        if: matrix.platform == 'windows'
-        run: |
-          New-Item -ItemType Directory -Force -Path release_assets
-          $PLATFORM = "${{ matrix.platform }}"
-          $ARCH = "${{ matrix.arch }}"
-          
-          # 复制 Windows 可执行文件
-          if (Test-Path "build\*.exe") {
-            Get-ChildItem "build\*.exe" | ForEach-Object {
-              $exe_name = $_.BaseName
-              $new_name = "${exe_name}-${PLATFORM}-${ARCH}.exe"
-              Copy-Item $_.FullName "release_assets\$new_name"
-              Write-Host "Copied Windows executable: $new_name"
-            }
-          }
-          
-          Write-Host "Release assets prepared:"
-          Get-ChildItem release_assets
-        shell: powershell
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: executables
+          path: dist
 
-      # 第八步：准备发布文件 (Unix - macOS/Linux)
-      - name: Prepare release assets (Unix)
-        if: matrix.platform != 'windows'
-        run: |
-          mkdir -p release_assets
-          PLATFORM="${{ matrix.platform }}"
-          ARCH="${{ matrix.arch }}"
-          
-          # 复制无扩展名的可执行文件 (macOS/Linux onefile 输出)
-          if [ -f "build/main" ]; then
-            new_name="main-${PLATFORM}-${ARCH}"
-            cp "build/main" "release_assets/$new_name"
-            chmod +x "release_assets/$new_name"
-            echo "Copied executable: $new_name"
-          fi
-          
-          echo "Release assets prepared:"
-          ls -la release_assets/
-        shell: bash
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: dist
 
-      # 第九步：创建发布（仅限标签推送）
-      - name: Create Release and Upload Assets
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release_assets/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          fail_on_unmatched_files: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      # 备选方案：使用 GitHub CLI 创建 release
-      - name: Create Release with GitHub CLI (fallback)
-        if: failure()
-        run: |
-          # 安装 GitHub CLI (如果需要)
-          if ! command -v gh &> /dev/null; then
-            echo "Installing GitHub CLI..."
-            case "${{ runner.os }}" in
-              Linux)
-                curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-                sudo apt update && sudo apt install gh
-                ;;
-              macOS)
-                brew install gh
-                ;;
-              Windows)
-                choco install gh
-                ;;
-            esac
-          fi
-          
-          # 创建 release
-          gh release create ${{ github.ref_name }} \
-            --title "Release ${{ github.ref_name }}" \
-            --generate-notes \
-            release_assets/* || echo "No files to upload"
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-        shell: bash
+          files: dist/*
+          name: "Release ${{ github.ref_name }}"
+          tag_name: ${{ github.ref }}
+          body: |
+            自动发布版本 ${{ github.ref_name }}
+            包含以下平台的可执行文件：
+            - Windows (x64)
+            - macOS (x64)
+            - macOS (arm64)
+            - Linux (x64)
