@@ -1,6 +1,6 @@
 [project]
 name = "grades-calculation"
-version = "2.0.0"
+version = "2.1.0"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -9,7 +9,7 @@ dependencies = [
     "polars>=1.32.3",
 ]
 [tool.bumpversion]
-current_version = "2.0.0"
+current_version = "2.1.0"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
