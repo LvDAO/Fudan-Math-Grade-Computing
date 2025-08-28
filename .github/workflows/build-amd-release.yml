@@ -86,7 +86,6 @@ jobs:
             build/*.exe
             build/*.bin
             build/*.app/**/*
-            build/*.dist/**/*
           include-hidden-files: true
 
       # 第七步：检查构建产物
@@ -112,16 +111,6 @@ jobs:
               $new_name = "${exe_name}-${PLATFORM}-${ARCH}.exe"
               Copy-Item $_.FullName "release_assets\$new_name"
               Write-Host "Copied Windows executable: $new_name"
-            }
-          }
-          
-          # 处理 .dist 目录内容（如果存在）
-          if (Test-Path "build\*.dist") {
-            Get-ChildItem "build\*.dist" -Directory | ForEach-Object {
-              $dist_name = $_.BaseName
-              $zip_name = "${dist_name}-${PLATFORM}-${ARCH}-dist.zip"
-              Write-Host "Creating zip for dist: $zip_name"
-              Compress-Archive -Path $_.FullName -DestinationPath "release_assets\$zip_name" -Force
             }
           }
           
@@ -155,16 +144,6 @@ jobs:
               zip_name="${app_name}-${PLATFORM}-${ARCH}.zip"
               echo "Creating zip for macOS app: $zip_name"
               (cd build && zip -r "../release_assets/$zip_name" "$(basename "$app")")
-            done
-          fi
-          
-          # 复制 .dist 目录内容（如果存在）
-          if ls -d build/*.dist 1> /dev/null 2>&1; then
-            for dist in build/*.dist; do
-              dist_name=$(basename "$dist" .dist)
-              zip_name="${dist_name}-${PLATFORM}-${ARCH}-dist.zip"
-              echo "Creating zip for dist: $zip_name"
-              (cd build && zip -r "../release_assets/$zip_name" "$(basename "$dist")")
             done
           fi
           
