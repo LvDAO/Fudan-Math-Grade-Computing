@@ -74,11 +74,10 @@ jobs:
         with:
           nuitka-version: main
           script-name: main.py
-          mode: standalone
-          onefile: true
-          include-packages: polars
-          include-modules: polars
-          follow-imports: true
+          mode: onefile
+          include-package: polars
+          include-module: os,argparse,warnings
+          include-package-data: polars
           assume-yes-for-downloads: true
           no-deployment-flag: self-execution
 
@@ -89,8 +88,7 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.arch }}-build
           path: |
             build/*.exe
-            build/*.bin
-            build/*.app/**/*
+            build/main
           include-hidden-files: true
 
       # 第七步：检查构建产物
@@ -98,7 +96,7 @@ jobs:
         run: |
           echo "Checking build directory contents:"
           ls -la build/ || echo "Build directory does not exist"
-          find . -name "*.exe" -o -name "*.bin" -o -name "*.app" || echo "No executable files found"
+          find . -name "*.exe" -o -name "main" || echo "No executable files found"
         shell: bash
 
       # 第八步：准备发布文件 (Windows)
@@ -131,25 +129,12 @@ jobs:
           PLATFORM="${{ matrix.platform }}"
           ARCH="${{ matrix.arch }}"
           
-          # 复制 Linux 二进制文件
-          if ls build/*.bin 1> /dev/null 2>&1; then
-            for bin in build/*.bin; do
-              bin_name=$(basename "$bin" .bin)
-              new_name="${bin_name}-${PLATFORM}-${ARCH}"
-              cp "$bin" "release_assets/$new_name"
-              chmod +x "release_assets/$new_name"
-              echo "Copied Linux binary: $new_name"
-            done
-          fi
-          
-          # 处理 macOS .app 目录 - 打包为 zip
-          if ls -d build/*.app 1> /dev/null 2>&1; then
-            for app in build/*.app; do
-              app_name=$(basename "$app" .app)
-              zip_name="${app_name}-${PLATFORM}-${ARCH}.zip"
-              echo "Creating zip for macOS app: $zip_name"
-              (cd build && zip -r "../release_assets/$zip_name" "$(basename "$app")")
-            done
+          # 复制无扩展名的可执行文件 (macOS/Linux onefile 输出)
+          if [ -f "build/main" ]; then
+            new_name="main-${PLATFORM}-${ARCH}"
+            cp "build/main" "release_assets/$new_name"
+            chmod +x "release_assets/$new_name"
+            echo "Copied executable: $new_name"
           fi
           
           echo "Release assets prepared:"

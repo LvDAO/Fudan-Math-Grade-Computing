@@ -1,4 +1,3 @@
-from tkinter import NO
 from warnings import warn
 import polars as pl
 import argparse
