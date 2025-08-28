@@ -38,7 +38,7 @@ chmod +x main-linux-x64
 ### 命令行参数
 
 ```bash
-main --c 课程列表文件 --g 成绩文件 -o 输出文件
+main --c 课程列表文件 --g 成绩文件 -y 计算学年 -o 输出文件
 ```
 
 #### 必需参数
@@ -47,31 +47,32 @@ main --c 课程列表文件 --g 成绩文件 -o 输出文件
 
 #### 可选参数
 
-* `--course_list` / `-c`：课程列表 CSV 文件路径，不提供具体课程列表时使用默认内置的课程列表
+- `--course_list` / `-c`：课程列表 CSV 文件路径，不提供具体课程列表时使用默认内置的课程列表
 
 - `--output` / `-o`：输出文件路径（默认：`output.csv`）
 
+- `--year` / `-y`：要计算的学年，默认是计算所有学年的 GPA
 ### 使用示例
 
 #### Windows
 
 ```cmd
 # 在命令提示符中运行
-main-windows-x64.exe -c CourseList.csv -g Grades.csv -o result.csv
+main-windows-x64.exe -c CourseList.csv -g Grades.csv -o result.csv -y 2024-2025
 ```
 
 #### macOS
 
 ```bash
 # 在终端中运行（假设已解压到当前目录）
-./main.app/Contents/MacOS/main -c CourseList.csv -g Grades.csv -o result.csv
+./main.app/Contents/MacOS/main -c CourseList.csv -g Grades.csv -o result.csv -y 2024-2025
 ```
 
 #### Linux
 
 ```bash
 # 在终端中运行
-./main-linux-x64 -c CourseList.csv -g Grades.csv -o result.csv
+./main-linux-x64 -c CourseList.csv -g Grades.csv -o result.csv -y 2024-2025
 ```
 
 ## 📄 输入文件格式
