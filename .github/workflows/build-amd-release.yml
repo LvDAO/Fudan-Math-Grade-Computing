@@ -65,8 +65,14 @@ jobs:
       # 第四步：安装项目依赖
       - name: Install Dependencies
         run: |
-          uv venv
+          # 使用 uv 创建虚拟环境并安装依赖
+          uv venv .venv
+          source .venv/bin/activate
           uv pip install -e .
+          # 验证 polars 安装
+          python -c "import polars; print(f'Polars installed at: {polars.__file__}')"
+          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
       # 第五步：使用 Nuitka-Action 编译项目
       - name: Build Executable
