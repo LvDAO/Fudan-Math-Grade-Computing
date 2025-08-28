@@ -21,3 +21,4 @@ main
 build_local_fixed.sh
 main-fixed
 _CodeSignature
+main.bin

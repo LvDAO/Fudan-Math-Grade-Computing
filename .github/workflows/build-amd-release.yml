@@ -85,12 +85,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           # 构建产物的名称，统一命名以便后续下载
-          name: executables
+          name: executable-${{ matrix.platform }}-${{ matrix.arch }}
           # 要上传的文件路径
           path: build/calculator-${{ matrix.platform }}-${{ matrix.arch }}*
 
   release:
-    # 'needs' 确保这个 Job 会在 'build_executables' 全部成功后运行
     needs: build
     runs-on: ubuntu-latest
 
@@ -98,7 +97,6 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: executables
           path: dist
 
       - name: Display structure of downloaded files
@@ -108,7 +106,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: dist/**/*
           name: "Release ${{ github.ref_name }}"
           tag_name: ${{ github.ref }}
           body: |
