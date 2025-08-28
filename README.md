@@ -6,26 +6,26 @@
 
 #### 🪟 Windows 用户
 
-- 下载：`main-windows-x64.exe`
+- 下载：`calculator-windows-x64.exe`
 - 使用：在命令行中执行
 
 #### 🍎 macOS 用户
 
 **Intel Mac (x64)**
 
-- 下载：`main-macos-x64.zip`
+- 下载：`calculator-macos-x64.bin`
 - 使用：解压后使用终端app运行
 
 **Apple Silicon Mac (ARM64)**
 
-- 下载：`main-macos-arm64.zip`
+- 下载：`calculator-macos-arm64.bin`
 - 使用：解压后使用终端app运行
 
 > **注意**：首次运行时可能需要在"系统偏好设置 > 安全性与隐私"中允许运行此应用。
 
 #### 🐧 Linux 用户
 
-- 下载：`main-linux-x64`
+- 下载：`calculator-linux-x64.bin`
 - 使用：添加执行权限后运行
 
 ```bash
@@ -38,7 +38,7 @@ chmod +x main-linux-x64
 ### 命令行参数
 
 ```bash
-main -c 课程列表文件 -g 成绩文件 -y 计算学年 -o 输出文件
+calculator -c 课程列表文件 -g 成绩文件 -y 计算学年 -o 输出文件
 ```
 
 #### 必需参数
@@ -58,21 +58,21 @@ main -c 课程列表文件 -g 成绩文件 -y 计算学年 -o 输出文件
 
 ```cmd
 # 在命令提示符中运行
-main-windows-x64.exe -c D:\\Documents\CourseList.csv -g D:\\Documents\Grades.csv -o result.csv -y 2024-2025
+calculator-windows-x64.exe -c D:\\Documents\CourseList.csv -g D:\\Documents\Grades.csv -o result.csv -y 2024-2025
 ```
 
 #### macOS
 
 ```bash
 # 在终端中运行（假设已解压到当前目录）
-./main.app/Contents/MacOS/main -c /home/Documents/CourseList.csv -g /home/Documents/Grades.csv -o result.csv -y 2024-2025
+./calculator-macos-arm64.bin -c /home/Documents/CourseList.csv -g /home/Documents/Grades.csv -o result.csv -y 2024-2025
 ```
 
 #### Linux
 
 ```bash
 # 在终端中运行
-./main-linux-x64 -c /home/Documents/CourseList.csv -g /home/Documents/Grades.csv -o result.csv -y 2024-2025
+./calculator-linux-x64.bin -c /home/Documents/CourseList.csv -g /home/Documents/Grades.csv -o result.csv -y 2024-2025
 ```
 
 ## 📄 输入文件格式
