@@ -12,3 +12,9 @@ wheels/
 *.csv
 *.xlsx
 .DS_Store
+main.app
+main.build
+main.dist
+main.onefile-build
+info.plist
+main

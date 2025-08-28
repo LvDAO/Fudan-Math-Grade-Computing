@@ -74,7 +74,12 @@ jobs:
         with:
           nuitka-version: main
           script-name: main.py
-          mode: app
+          mode: standalone
+          onefile: true
+          include-packages: polars
+          include-modules: polars
+          follow-imports: true
+          assume-yes-for-downloads: true
           no-deployment-flag: self-execution
 
       # 第六步：上传构建产物
